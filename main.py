@@ -4,11 +4,10 @@ from numpy._typing import NDArray
 import math
 
 np.random.seed(10)
-SAMPLE = np.random.rand(10)
+SAMPLE = np.random.rand(8)
 
 
-# non-numpy
-def dft2(x: NDArray[np.float64]) -> list[float]:
+def dft1(x: NDArray[np.float64]) -> list[float]:
     N = len(x)
     out = []
     for k in range(N):
@@ -28,9 +27,44 @@ def dft(x: NDArray[np.float64]) -> NDArray[Any]:
     return np.dot(e, x)
 
 
-if __name__ == "__main__":
-    o = dft(SAMPLE)
-    print(o)
+def fft(x: NDArray[np.float64]) -> NDArray[Any]:
+    N = len(x)
 
-    o = dft2(SAMPLE)
-    print(o)
+    if N <= 4:
+        return dft(x)
+
+    odd = fft(x[1::2])
+    even = fft(x[0::2])
+
+    out = []
+    for k in range(N // 2):
+        e = np.exp(-1j * 2 * math.pi * k * (1 / N))
+        out.append(even[k] + e * odd[k])
+    for k in range(N // 2):
+        e = np.exp(-1j * 2 * math.pi * k * (1 / N))
+        out.append(even[k] - e * odd[k])
+
+    out = np.array(out)
+    return out
+
+
+if __name__ == "__main__":
+    # o = dft(SAMPLE)
+    # print(o)
+    #
+    # print("-------")
+    #
+    # o = dft2(SAMPLE)
+    # print(o)
+    #
+    # print("-------")
+    #
+    # o = np.fft.fft(SAMPLE)
+    # print(o)
+    # fft(SAMPLE)
+
+    # print("-------")
+
+    # o = fft(SAMPLE)
+    # print(o)
+    pass
