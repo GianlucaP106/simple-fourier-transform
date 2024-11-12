@@ -27,6 +27,14 @@ def dft(x: NDArray[np.float64]) -> NDArray[Any]:
     return np.dot(e, x)
 
 
+def idft(x: NDArray[np.float64]):
+    pass
+
+
+def ifft(x: NDArray[np.float64]):
+    pass
+
+
 def fft(x: NDArray[np.float64]) -> NDArray[Any]:
     N = len(x)
 
@@ -48,23 +56,16 @@ def fft(x: NDArray[np.float64]) -> NDArray[Any]:
     return out
 
 
+def fft2():
+    pass
+
+
+def ifft2():
+    pass
+
+
 if __name__ == "__main__":
-    # o = dft(SAMPLE)
-    # print(o)
-    #
-    # print("-------")
-    #
-    # o = dft2(SAMPLE)
-    # print(o)
-    #
-    # print("-------")
-    #
-    # o = np.fft.fft(SAMPLE)
-    # print(o)
-    # fft(SAMPLE)
-
-    # print("-------")
-
-    # o = fft(SAMPLE)
-    # print(o)
+    r = np.fft.fft(SAMPLE)
+    r2 = fft(SAMPLE)
+    print(np.allclose(r, r2))
     pass
