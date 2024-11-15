@@ -1,6 +1,7 @@
 import math
 from typing import Any
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import argparse
 
 import cv2
@@ -92,58 +93,90 @@ def load_gray_scale(path: str) -> MatLike:
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
-def denoise(img: MatLike, cutoff=0.95):
-    a = np.asarray(img[:, :])
-    freqs = fft2(a)
+def denoise(img: MatLike, cutoff=0.99):
+    freqs = fft2(img)
 
     index_cutoff = int(cutoff * freqs.shape[0] * freqs.shape[1])
     thresh = np.sort(freqs.flatten())[index_cutoff]
 
     freqs[freqs >= thresh] = 0
 
-    a = ifft2(freqs)
-    a = np.real(a)
-    return a
+    return np.real(ifft2(freqs))
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="FFT Image Processing Application")
-    parser.add_argument(
-        "-m",
-        "--mode",
-        type=int,
-        default=1,
-        help="Mode: 1 for FFT display, 2 for Denoise, 3 for Compress, 4 for Runtime Plot",
-    )
-    parser.add_argument(
-        "-i", "--image", type=str, default="image.png", help="Image file path"
-    )
-    args = parser.parse_args()
+    parser.add_argument("-m", "--mode", type=int, default=1, help="Mode: 1 for FFT display, 2 for Denoise, 3 for Compress, 4 for Runtime Plot")
+    parser.add_argument("-i", "--image", type=str, default="image.png", help="Image file path")
+    return parser.parse_args()
+
+
+def next_power_of_2(x):
+    if x == 0:
+        return 1
+    else:
+        return 2**(x - 1).bit_length()
+
+
+def load_image(path: str):
+    image = load_gray_scale(path)
+    h, w = image.shape
+    new_size = (next_power_of_2(w), next_power_of_2(h))
+    image = cv2.resize(image, new_size)
+    return np.asarray(image[:, :])
+
+
+def log_scale_plot(image, image_fft_form):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].imshow(image, cmap="gray")
+    ax[0].set_title("Image")
+    ax[1].imshow(np.abs(image_fft_form), norm=LogNorm(), cmap="gray")
+    ax[1].set_title("Image FFT Form (log scaled)")
+    plt.show()
+
+
+def denoised_plot(image, denoised_image):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].imshow(image, cmap="gray")
+    ax[0].set_title("Image")
+    ax[1].imshow(denoised_image, cmap="gray")
+    ax[1].set_title("Denoised Image")
+    plt.show()
 
 
 if __name__ == "__main__":
-    # np.random.seed(10)
-    # sample = np.random.rand(32, 32)
-    # r = np.fft.ifft2(sample)
-    # r2 = ifft2(sample)
-    # print(np.allclose(r, r2))
+    args = parse_args()
 
-    img = load_gray_scale(
-        "/Users/gianlucapiccirillo/mynav/school/simple-fourier-transform/assets/moonlanding.png"
-    )
-    dsize = (512, 256)
-    img = cv2.resize(img, dsize)
-    fig, ax = plt.subplots(1, 4, figsize=(10, 5))
+    #This needs to be defaulted to args.image
+    image = load_image("C:/Users/Nico/Desktop/ECSE_316/Assignments/Assignment2/simple-fourier-transform/assets/moonlanding.png")
+    
+    if args.mode == 1:
+        image_fft_form = fft2(image)
+        log_scale_plot(image, image_fft_form)
 
-    qs = [0.5, 0.75, 0.99]
-    for idx, q in enumerate(qs):
-        a = denoise(img, cutoff=q)
-        cv2.imshow("Image " + str(q), a)
-        ax[idx].imshow(a, cmap="gray")
-        ax[idx].set_title(str(q))
+    elif args.mode == 2:
+        denoised_image = denoise(image)
+        denoised_plot(image, denoised_image)
 
-    s = len(qs)
-    ax[s].imshow(img, cmap="gray")
-    ax[s].set_title("Original")
+    elif args.mode == 3:
+        pass
 
-    plt.show()
+    elif args.mode == 4:
+        pass
+
+    # dsize = (512, 256)
+    # img = cv2.resize(img, dsize)
+    # fig, ax = plt.subplots(1, 4, figsize=(10, 5))
+
+    # qs = [0.5, 0.75, 0.99]
+    # for idx, q in enumerate(qs):
+    #     a = denoise(img, cutoff=q)
+    #     cv2.imshow("Image " + str(q), a)
+    #     ax[idx].imshow(a, cmap="gray")
+    #     ax[idx].set_title(str(q))
+
+    # s = len(qs)
+    # ax[s].imshow(img, cmap="gray")
+    # ax[s].set_title("Original")
+
+    # plt.show()
