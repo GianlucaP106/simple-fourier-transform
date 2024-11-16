@@ -3,6 +3,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import argparse
+import time
 
 import cv2
 
@@ -97,25 +98,18 @@ def denoise(img: MatLike, cutoff=0.99):
     freqs = fft2(img)
 
     index_cutoff = int(cutoff * freqs.shape[0] * freqs.shape[1])
-    thresh = np.sort(freqs.flatten())[index_cutoff]
+    thresh = np.sort(np.real(freqs.flatten()))[index_cutoff]
 
     freqs[freqs >= thresh] = 0
 
     return np.real(ifft2(freqs))
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="FFT Image Processing Application")
-    parser.add_argument("-m", "--mode", type=int, default=1, help="Mode: 1 for FFT display, 2 for Denoise, 3 for Compress, 4 for Runtime Plot")
-    parser.add_argument("-i", "--image", type=str, default="image.png", help="Image file path")
-    return parser.parse_args()
-
-
 def next_power_of_2(x):
     if x == 0:
         return 1
     else:
-        return 2**(x - 1).bit_length()
+        return 2 ** (x - 1).bit_length()
 
 
 def load_image(path: str):
@@ -144,12 +138,57 @@ def denoised_plot(image, denoised_image):
     plt.show()
 
 
-if __name__ == "__main__":
+def runtime_plot():
+    powers_2 = 2 ** np.arange(13)[3:]
+    futs = [dft, fft]
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    for idx, fut in enumerate(futs):
+        average_times = []
+        stds = []
+        for size in powers_2:
+            times = []
+            input = np.random.rand(size)
+            for _ in range(10):
+                start = time.time()
+                fut(input)
+                end = time.time()
+                times.append(end - start)
+            stds.append(np.std(times))
+            average_times.append(np.average(times))
+
+        stds = 2 * np.array(stds)
+        ax[idx].errorbar(powers_2, average_times, yerr=stds)
+
+    plt.show()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="FFT Image Processing Application")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        type=int,
+        default=1,
+        help="Mode: 1 for FFT display, 2 for Denoise, 3 for Compress, 4 for Runtime Plot",
+    )
+
+    parser.add_argument(
+        "-i",
+        "--image",
+        type=str,
+        help="Image file path",
+        required=True,
+    )
+    return parser.parse_args()
+
+
+def main():
     args = parse_args()
 
-    #This needs to be defaulted to args.image
-    image = load_image("C:/Users/Nico/Desktop/ECSE_316/Assignments/Assignment2/simple-fourier-transform/assets/moonlanding.png")
-    
+    # This needs to be defaulted to args.image
+    image = load_image(args.image)
+
     if args.mode == 1:
         image_fft_form = fft2(image)
         log_scale_plot(image, image_fft_form)
@@ -162,21 +201,8 @@ if __name__ == "__main__":
         pass
 
     elif args.mode == 4:
-        pass
+        runtime_plot()
 
-    # dsize = (512, 256)
-    # img = cv2.resize(img, dsize)
-    # fig, ax = plt.subplots(1, 4, figsize=(10, 5))
 
-    # qs = [0.5, 0.75, 0.99]
-    # for idx, q in enumerate(qs):
-    #     a = denoise(img, cutoff=q)
-    #     cv2.imshow("Image " + str(q), a)
-    #     ax[idx].imshow(a, cmap="gray")
-    #     ax[idx].set_title(str(q))
-
-    # s = len(qs)
-    # ax[s].imshow(img, cmap="gray")
-    # ax[s].set_title("Original")
-
-    # plt.show()
+if __name__ == "__main__":
+    main()
