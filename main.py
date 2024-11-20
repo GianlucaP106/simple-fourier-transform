@@ -1,5 +1,6 @@
 import math
 from typing import Any
+from cv2.gapi import imgproc
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import argparse
@@ -10,6 +11,10 @@ import cv2
 from cv2.typing import MatLike
 import numpy as np
 from numpy._typing import NDArray
+
+# TODO:
+#  make it runtime 2D
+#  naive 2d fft
 
 
 def dft(x: NDArray[np.float64]) -> NDArray[Any]:
@@ -94,14 +99,26 @@ def load_gray_scale(path: str) -> MatLike:
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 
-def denoise(img: MatLike, cutoff=0.99):
+def denoise(img: MatLike, cutoff=0.99) -> tuple[MatLike, int]:
+    # to fft
     freqs = fft2(img)
 
+    # zeroing
     index_cutoff = int(cutoff * freqs.shape[0] * freqs.shape[1])
-    thresh = np.sort(np.real(freqs.flatten()))[index_cutoff]
-
+    thresh = np.sort(np.abs(freqs.flatten()))[index_cutoff]
     freqs[freqs >= thresh] = 0
 
+    nonzero = np.count_nonzero(freqs)
+
+    # back to image
+    return np.real(ifft2(freqs)), nonzero
+
+
+def compress(img: MatLike):
+    freqs = fft2(img)
+    index_cutoff = int(0.95 * freqs.shape[0] * freqs.shape[1])
+    thresh = np.sort(np.abs(freqs.flatten()))[index_cutoff]
+    freqs[freqs >= thresh] = 0
     return np.real(ifft2(freqs))
 
 
@@ -129,17 +146,30 @@ def log_scale_plot(image, image_fft_form):
     plt.show()
 
 
-def denoised_plot(image, denoised_image):
+def denoised_plot(image: MatLike, denoised_image: MatLike, count: int):
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].imshow(image, cmap="gray")
     ax[0].set_title("Image")
     ax[1].imshow(denoised_image, cmap="gray")
     ax[1].set_title("Denoised Image")
+
+    print("number of nonzero values: ", count)
+    total = image.shape[0] * image.shape[1]
+    print("nonzero / total: ", count, "/", total, "=", count / total)
+    plt.show()
+
+
+def compress_plot(image: MatLike, compressed: MatLike):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].imshow(image, cmap="gray")
+    ax[0].set_title("Image")
+    ax[1].imshow(compressed, cmap="gray")
+    ax[1].set_title("Compressed Image")
     plt.show()
 
 
 def runtime_plot():
-    powers_2 = 2 ** np.arange(13)[3:]
+    powers_2 = 2 ** np.arange(11)[5:]
     futs = [dft, fft]
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
@@ -194,10 +224,12 @@ def main():
         log_scale_plot(image, image_fft_form)
 
     elif args.mode == 2:
-        denoised_image = denoise(image)
-        denoised_plot(image, denoised_image)
+        denoised_image, count = denoise(image)
+        denoised_plot(image, denoised_image, count)
 
     elif args.mode == 3:
+        compressed = compress(image)
+
         pass
 
     elif args.mode == 4:
