@@ -1,23 +1,16 @@
-import math
-from typing import Any
-from cv2.gapi import imgproc
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 import argparse
+import math
 import time
 
 import cv2
-
-from cv2.typing import MatLike
+import matplotlib.pyplot as plt
 import numpy as np
+from cv2.typing import MatLike
+from matplotlib.colors import LogNorm
 from numpy._typing import NDArray
 
-# TODO:
-#  make it runtime 2D
-#  naive 2d fft
 
-
-def dft(x: NDArray[np.float64]) -> NDArray[Any]:
+def dft(x: NDArray) -> NDArray:
     N = len(x)
     indices = np.arange(N)
     kxn = indices * indices[:, None]
@@ -25,7 +18,7 @@ def dft(x: NDArray[np.float64]) -> NDArray[Any]:
     return np.dot(e, x)
 
 
-def idft(x: NDArray[np.float64]) -> NDArray[Any]:
+def idft(x: NDArray) -> NDArray:
     N = len(x)
     indices = np.arange(N)
     kxn = indices * indices[:, None]
@@ -33,7 +26,7 @@ def idft(x: NDArray[np.float64]) -> NDArray[Any]:
     return np.dot((1 / N) * e, x)
 
 
-def _idft(x: NDArray[np.float64]) -> NDArray[Any]:
+def _idft(x: NDArray) -> NDArray:
     N = len(x)
     indices = np.arange(N)
     kxn = indices * indices[:, None]
@@ -41,7 +34,7 @@ def _idft(x: NDArray[np.float64]) -> NDArray[Any]:
     return np.dot(e, x)
 
 
-def fft(x: NDArray[np.float64]) -> NDArray[Any]:
+def fft(x: NDArray) -> NDArray:
     N = len(x)
 
     if N <= 4:
@@ -62,8 +55,8 @@ def fft(x: NDArray[np.float64]) -> NDArray[Any]:
     return out
 
 
-def ifft(x: NDArray[Any]):
-    def rec(x: NDArray[Any]):
+def ifft(x: NDArray):
+    def rec(x: NDArray):
         N = len(x)
 
         if N <= 4:
@@ -86,11 +79,15 @@ def ifft(x: NDArray[Any]):
     return (1 / N) * rec(x)
 
 
-def fft2(x: NDArray[Any]):
+def dft2(x: NDArray):
+    return np.transpose([dft(col) for col in np.transpose([dft(row) for row in x])])
+
+
+def fft2(x: NDArray):
     return np.transpose([fft(col) for col in np.transpose([fft(row) for row in x])])
 
 
-def ifft2(x: NDArray[Any]):
+def ifft2(x: NDArray):
     return np.transpose([ifft(col) for col in np.transpose([ifft(row) for row in x])])
 
 
@@ -168,17 +165,17 @@ def compress_plot(image: MatLike, compressed: MatLike):
     plt.show()
 
 
-def runtime_plot():
-    powers_2 = 2 ** np.arange(11)[5:]
-    futs = [dft, fft]
+def runtime_plot(sizes: NDArray):
+    powers_2 = 2**sizes
+    futs = [dft2, fft2]
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    for idx, fut in enumerate(futs):
+    _, ax = plt.subplots(1, 2, figsize=(10, 5))
+    for fut_idx, fut in enumerate(futs):
         average_times = []
         stds = []
         for size in powers_2:
             times = []
-            input = np.random.rand(size)
+            input = np.random.rand(size, size)
             for _ in range(10):
                 start = time.time()
                 fut(input)
@@ -188,7 +185,7 @@ def runtime_plot():
             average_times.append(np.average(times))
 
         stds = 2 * np.array(stds)
-        ax[idx].errorbar(powers_2, average_times, yerr=stds)
+        ax[fut_idx].errorbar(powers_2, average_times, yerr=stds)
 
     plt.show()
 
@@ -215,8 +212,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    # This needs to be defaulted to args.image
     image = load_image(args.image)
 
     if args.mode == 1:
@@ -229,11 +224,11 @@ def main():
 
     elif args.mode == 3:
         compressed = compress(image)
-
         pass
 
     elif args.mode == 4:
-        runtime_plot()
+        # TODO: fixe sizes according to what will take a a reasonable amount of time
+        runtime_plot(np.arange(11)[5:])
 
 
 if __name__ == "__main__":
