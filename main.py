@@ -110,13 +110,36 @@ def denoise(img: MatLike, cutoff=0.99) -> tuple[MatLike, int]:
     # back to image
     return np.real(ifft2(freqs)), nonzero
 
-
-def compress(img: MatLike):
+#testing different denoising
+def denoise2(img: MatLike, cutoff=0.99) -> tuple[MatLike, int]:
+    # to fft
     freqs = fft2(img)
-    index_cutoff = int(0.95 * freqs.shape[0] * freqs.shape[1])
+
+    # zeroing
+    index_cutoff_low = int(cutoff * freqs.shape[0] * freqs.shape[1])
+    index_cutoff_high = int((1 - cutoff) * freqs.shape[0] * freqs.shape[1])
+    thresh_low, thresh_high = np.sort(np.abs(freqs.flatten()))[[index_cutoff_low, index_cutoff_high]]
+    freqs[(np.abs(freqs) < thresh_low) | (np.abs(freqs) > thresh_high)] = 0
+
+    nonzero = np.count_nonzero(freqs)
+
+    # back to image
+    return np.real(ifft2(freqs)), nonzero
+
+
+def compression(img: MatLike, compression_level: int) -> tuple[MatLike, int]:
+    #to fft
+    freqs = fft2(img)
+
+    #modify Fourier coefficients to compress 
+    index_cutoff = int(compression_level * freqs.shape[0] * freqs.shape[1])
     thresh = np.sort(np.abs(freqs.flatten()))[index_cutoff]
-    freqs[freqs >= thresh] = 0
-    return np.real(ifft2(freqs))
+    freqs[np.abs(freqs) < thresh] = 0
+
+    nonzero = np.count_nonzero(freqs)
+
+    #return the image to display
+    return np.real(ifft2(freqs)), nonzero
 
 
 def next_power_of_2(x):
@@ -156,12 +179,50 @@ def denoised_plot(image: MatLike, denoised_image: MatLike, count: int):
     plt.show()
 
 
-def compress_plot(image: MatLike, compressed: MatLike):
+def compress_plot(image: MatLike, compressed_image: MatLike, nonzero_count: int):
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].imshow(image, cmap="gray")
     ax[0].set_title("Image")
-    ax[1].imshow(compressed, cmap="gray")
+    ax[1].imshow(compressed_image, cmap="gray")
     ax[1].set_title("Compressed Image")
+
+    print("number of nonzero values: ", nonzero_count)
+    total = image.shape[0] * image.shape[1]
+    print("nonzero / total: ", nonzero_count, "/", total, "=", nonzero_count / total)
+    plt.show()
+
+def compression_plot(image: MatLike):
+    fig, ax = plt.subplots(2, 3, figsize=(10, 5))
+    compressed_image, nonzero_count = compression(image, 0)
+    ax[0, 0].imshow(compressed_image, cmap="gray")
+    ax[0, 0].set_title("Compression level 0%")
+    print("0% nonzeros count: ", nonzero_count)
+    
+    compressed_image1, nonzero_count1 = compression(image, 0.2)
+    ax[0, 1].imshow(compressed_image1, cmap="gray")
+    ax[0, 1].set_title("Compression level 20%")
+    print("20% nonzeros count: ", nonzero_count1)
+    
+    compressed_image2, nonzero_count2 = compression(image, 0.4)
+    ax[0, 2].imshow(compressed_image2, cmap="gray")
+    ax[0, 2].set_title("Compression level 40%")
+    print("40% nonzeros count: ", nonzero_count2)
+
+    compressed_image3, nonzero_count3 = compression(image, 0.6)
+    ax[1, 0].imshow(compressed_image3, cmap="gray")
+    ax[1, 0].set_title("Compression level 60%")
+    print("60% nonzeros count: ", nonzero_count3)
+
+    compressed_image4, nonzero_count4 = compression(image, 0.8)
+    ax[1, 1].imshow(compressed_image4, cmap="gray")
+    ax[1, 1].set_title("Compression level 80%")
+    print("80% nonzeros count: ", nonzero_count4)\
+
+    compressed_image5, nonzero_count5 = compression(image, 0.999)
+    ax[1, 2].imshow(compressed_image5, cmap="gray")
+    ax[1, 2].set_title("Compression level 99.9%")
+    print("99.9% nonzeros count: ", nonzero_count5)
+
     plt.show()
 
 
@@ -219,12 +280,13 @@ def main():
         log_scale_plot(image, image_fft_form)
 
     elif args.mode == 2:
-        denoised_image, count = denoise(image)
+        denoised_image, count = denoise2(image)
         denoised_plot(image, denoised_image, count)
 
     elif args.mode == 3:
-        compressed = compress(image)
-        pass
+        compression_plot(image)
+        # compressed_image, nonzero_count = compression(image, 0)
+        # compress_plot(image, compressed_image, nonzero_count)
 
     elif args.mode == 4:
         # TODO: fixe sizes according to what will take a a reasonable amount of time
