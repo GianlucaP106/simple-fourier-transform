@@ -3,7 +3,15 @@
 ## Installation
 
 ```bash
-git clone https://github.com/GianlucaP106/simple-fourier-transform
+# clone repo
+git clone https://github.com/GianlucaP106/simple-fourier-transform && cd simple-fourier-transform
+
+# create and source virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# install dependencies
+pip install -r requirements.txt
 ```
 
 ## Run Modes
