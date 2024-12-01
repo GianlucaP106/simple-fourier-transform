@@ -222,45 +222,29 @@ def denoised_plot(image: MatLike, denoised_image: MatLike, count: int):
 
 def compression_plot(image: MatLike):
     """
-    Displayes the original image various compressions at different levels.
+    Displays the original image and various compressions at different levels.
     """
     fig, ax = plt.subplots(2, 3, figsize=(10, 5))
-    compressed_image, nonzero_count = compression(image, 0, "./docs/sparse_matrix_0%")
-    ax[0, 0].imshow(compressed_image, cmap="gray")
-    ax[0, 0].set_title("Compression level 0%")
-    print("0% nonzeros count: ", nonzero_count)
-    print("0% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_0%.npz"))
-
-    compressed_image1, nonzero_count1 = compression(image, 0.2, "./docs/sparse_matrix_20%")
-    ax[0, 1].imshow(compressed_image1, cmap="gray")
-    ax[0, 1].set_title("Compression level 20%")
-    print("20% nonzeros count: ", nonzero_count1)
-    print("20% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_20%.npz"))
-
-    compressed_image2, nonzero_count2 = compression(image, 0.4, "./docs/sparse_matrix_40%")
-    ax[0, 2].imshow(compressed_image2, cmap="gray")
-    ax[0, 2].set_title("Compression level 40%")
-    print("40% nonzeros count: ", nonzero_count2)
-    print("40% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_40%.npz"))
-
-    compressed_image3, nonzero_count3 = compression(image, 0.6, "./docs/sparse_matrix_60%")
-    ax[1, 0].imshow(compressed_image3, cmap="gray")
-    ax[1, 0].set_title("Compression level 60%")
-    print("60% nonzeros count: ", nonzero_count3)
-    print("60% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_60%.npz"))
-
-    compressed_image4, nonzero_count4 = compression(image, 0.8, "./docs/sparse_matrix_80%")
-    ax[1, 1].imshow(compressed_image4, cmap="gray")
-    ax[1, 1].set_title("Compression level 80%")
-    print("80% nonzeros count: ", nonzero_count4)
-    print("80% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_80%.npz"))
-
-    compressed_image5, nonzero_count5 = compression(image, 0.999, "./docs/sparse_matrix_99.9%")
-    ax[1, 2].imshow(compressed_image5, cmap="gray")
-    ax[1, 2].set_title("Compression level 99.9%")
-    print("99.9% nonzeros count: ", nonzero_count5)
-    print("99.9% sparse matrix size: ", os.path.getsize("./docs/sparse_matrix_99.9%.npz"))
-
+    
+    compression_levels = [0, 0.2, 0.4, 0.6, 0.8, 0.999]
+    file_names = [
+        "./docs/sparse_matrix_0%",
+        "./docs/sparse_matrix_20%",
+        "./docs/sparse_matrix_40%",
+        "./docs/sparse_matrix_60%",
+        "./docs/sparse_matrix_80%",
+        "./docs/sparse_matrix_99.9%"
+    ]
+    
+    for idx, (level, file_name) in enumerate(zip(compression_levels, file_names)):
+        compressed_image, nonzero_count = compression(image, level, file_name)
+        row, col = divmod(idx, 3)  # Determine subplot position
+        ax[row, col].imshow(compressed_image, cmap="gray")
+        ax[row, col].set_title(f"Compression level {level*100:.1f}%")
+        
+        print(f"{level*100:.1f}% nonzeros count: ", nonzero_count)
+        print(f"{level*100:.1f}% sparse matrix size: ", os.path.getsize(f"{file_name}.npz"))
+    
     plt.show()
 
 
